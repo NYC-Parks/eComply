@@ -1,9 +1,10 @@
+import re
 import requests
 import urllib.parse
 
 
 class eComply:
-    _url: str
+    _baseURL: str
     _credential: dict
     _headers: dict = {
         "Authorization": "",
@@ -13,19 +14,20 @@ class eComply:
 
     def __init__(
         self,
-        url: str,
+        baseURL: str,
         username: str,
         password: str,
     ) -> None:
-        self._url = url
+        self._baseURL = baseURL
         self._credential = {"username": username, "password": password}
 
     def getAPIToken(self) -> str:
         url = (
-            self._url
+            self._baseURL
             + "Authentication/ValidateUser?"
             + urllib.parse.urlencode(self._credential)
         )
+
         response = requests.post(url, headers=self._headers)
 
         if response.ok:
@@ -36,44 +38,98 @@ class eComply:
             print(response.json())
             return ""
 
+    def getHeaders(self) -> dict:
+        token = self.getAPIToken()
+        self._headers["Authorization"] = "Bearer " + token
+        return self._headers
+
     def verifyToken(self, token: str):
-        url = self._url + "Authentication/AuthenticateToken?token=" + token
+        url = self._baseURL + "Authentication/AuthenticateToken?token=" + token
         print(url)
         response = requests.post(url, headers=self._headers)
         result = response.json()
         print(result)
 
-    def getContracts(self):
-        token = self.getAPIToken()
-        # print(self.verifyToken(token))
-        self._headers["Authorization"] = "Bearer " + token
-        url = self._url + "Contracts/ExportContracts"
-        # print(url)
-        response = requests.get(url, headers=self._headers)
+    def getContracts(self) -> list:
+        url = self._baseURL + "Contracts/ExportContracts"
+        response = requests.get(url, headers=self.getHeaders())
 
         if response.ok:
             result = response.json()
             return result["data"]
         else:
             print(response.json())
+            return []
 
-    def postDomainValues(self, domain):
-        token = self.getAPIToken()
-        self._headers["Authorization"] = "Bearer " + token
-        url = self._url + "Catalog/ImportDomainNames"
+    class Domain:
+        domainName: str
+        code: str
+        value: str
 
-        data = []
-        for value in domain["codedValues"]:
-            data.append(
+    def postDomainValues(self, domains: list[Domain]) -> bool:
+        url = self._baseURL + "Catalog/ImportDomainNames"
+        response = requests.post(url, headers=self.getHeaders(), json=domains)
+
+        if not response.ok:
+            raise Exception(response)
+
+        response = requests.get(url, headers=self._headers)
+
+        if not response.ok:
+            raise Exception(response)
+
+        result = response.json()
+        if result["success"]:
+            print(
                 {
-                    "domainName": domain["name"],
-                    "code": str(value["code"]),
-                    "value": value["name"],
+                    "success": result["success"],
+                    "processedResults": result["data"]["processedResults"],
+                    "totalProcessed": result["data"]["totalProcessed"],
+                    "totalWithErrors": result["data"]["totalWithErrors"],
+                    "totalUpdated": result["data"]["totalUpdated"],
+                    "totalCreated": result["data"]["totalCreated"],
+                }
+            )
+        else:
+            print(
+                {
+                    "success": result["success"],
+                    "message": result["message"],
                 }
             )
 
-        response = requests.post(url, headers=self._headers, json=data)
-        print(response.json())
-        if response.ok:
-            response = requests.get(url, headers=self._headers)
-            print(response.json())
+        return result["success"]
+
+    def postContracts(self, contracts: list) -> bool:
+        url = self._baseURL + "Contracts/ImportContracts"
+        response = requests.post(url, headers=self.getHeaders(), json=contracts)
+
+        if not response.ok:
+            raise Exception(response)
+
+        response = requests.get(url, headers=self._headers)
+
+        if not response.ok:
+            raise Exception(response)
+
+        result = response.json()
+        if result["success"]:
+            print(
+                {
+                    "success": result["success"],
+                    "processedResults": result["data"]["processedResults"],
+                    "totalProcessed": result["data"]["totalProcessed"],
+                    "totalWithErrors": result["data"]["totalWithErrors"],
+                    "totalUpdated": result["data"]["totalUpdated"],
+                    "totalCreated": result["data"]["totalCreated"],
+                }
+            )
+        else:
+            print(
+                {
+                    "success": result["success"],
+                    "message": result["message"],
+                }
+            )
+
+        return result["success"]
