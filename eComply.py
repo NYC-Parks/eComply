@@ -61,6 +61,40 @@ class eComply:
             print(response.json())
             return []
 
+    def postContracts(self, contracts: list) -> bool:
+        url = self._baseURL + "Contracts/ImportContracts"
+        response = requests.post(url, headers=self.getHeaders(), json=contracts)
+
+        if not response.ok:
+            raise Exception(response)
+
+        response = requests.get(url, headers=self._headers)
+
+        if not response.ok:
+            raise Exception(response)
+
+        result = response.json()
+        if result["success"]:
+            print(
+                {
+                    "success": result["success"],
+                    "processedResults": result["data"]["processedResults"],
+                    "totalProcessed": result["data"]["totalProcessed"],
+                    "totalWithErrors": result["data"]["totalWithErrors"],
+                    "totalUpdated": result["data"]["totalUpdated"],
+                    "totalCreated": result["data"]["totalCreated"],
+                }
+            )
+        else:
+            print(
+                {
+                    "success": result["success"],
+                    "message": result["message"],
+                }
+            )
+
+        return result["success"]
+
     class Domain:
         domainName: str
         code: str
@@ -100,9 +134,20 @@ class eComply:
 
         return result["success"]
 
-    def postContracts(self, contracts: list) -> bool:
-        url = self._baseURL + "Contracts/ImportContracts"
-        response = requests.post(url, headers=self.getHeaders(), json=contracts)
+    def getWorkOrders(self) -> list:
+        url = self._baseURL + "Contracts/ExportWorkOrders"
+        response = requests.get(url, headers=self.getHeaders())
+
+        if response.ok:
+            result = response.json()
+            return result["data"]
+        else:
+            print(response.json())
+            return []
+
+    def postWorkOrders(self, workOrders: list):
+        url = self._baseURL + "Contracts/ImportWorkOrders"
+        response = requests.post(url, headers=self.getHeaders(), json=workOrders)
 
         if not response.ok:
             raise Exception(response)
@@ -133,3 +178,14 @@ class eComply:
             )
 
         return result["success"]
+
+    def getWorkOrderLineItems(self) -> list:
+        url = self._baseURL + "Contracts/ExportWorkOrderLineItems"
+        response = requests.get(url, headers=self.getHeaders())
+
+        if response.ok:
+            result = response.json()
+            return result["data"]
+        else:
+            print(response.json())
+            return []
