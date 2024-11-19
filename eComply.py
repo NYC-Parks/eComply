@@ -1,3 +1,4 @@
+from datetime import datetime
 import requests
 import urllib.parse
 
@@ -96,7 +97,37 @@ class eComply:
         url = self._baseURL + "Contracts/ExportContracts"
         return self.__getEntities(url)
 
-    def postContracts(self, contracts: list) -> bool:
+    class Contract:
+        objectId: int
+        codedValue: int
+        contractName: str
+        contractType: str
+        contractStatus: str
+        borough: str
+        fundingSource: str
+        projectManager: str
+        contractor: str
+        awardAmount: int
+        awardDate: datetime
+        orderToWorkDate: datetime
+        specifiedCompletionDate: datetime
+        anticipatedCompletionDate: datetime
+        createdDate: datetime
+        createdByName: str
+        createdBYERN: str
+        updatedDate: datetime
+        updatedByName: str
+        updatedByERN: str
+        closedDate: datetime
+        closedByName: str
+        closedByERN: str
+        cancelDate: datetime
+        cancelByName: str
+        cancelByERN: str
+        cancelReason: str
+        closedBySystem: int
+
+    def postContracts(self, contracts: list[Contract]) -> bool:
         url = self._baseURL + "Contracts/ImportContracts"
         return self.__postEntities(url, contracts)
 
@@ -113,7 +144,49 @@ class eComply:
         url = self._baseURL + "Contracts/ExportWorkOrders"
         return self.__getEntities(url)
 
-    def postWorkOrders(self, workOrders: list):
+    class WorkOrder:
+        objectId: int
+        workOrderGlobalId: str
+        contract: int
+        borough: int
+        communityBoard: int
+        status: int
+        cityCouncil: int
+        recSpecies: int
+        plantingSpaceId: int
+        plantingSpaceGlobalId: str
+        project: int
+        projStartDate: datetime
+        buildingNumber: str
+        streetName: str
+        onStreetSite: str
+        location: str
+        crossStreet1: str
+        crossStreet2: str
+        fundingSource: str
+        actualFinishDate: datetime
+        createdDate: datetime
+        createdByName: str
+        createdBYERN: str
+        updatedDate: datetime
+        updatedByName: str
+        updatedByERN: str
+        closedDate: datetime
+        closedByName: str
+        closedByERN: str
+        cancelDate: datetime
+        cancelByName: str
+        cancelByERN: str
+        cancelReason: str
+        closedBySystem: int
+        type: int
+        parkName: str
+        parkZone: str
+        woEntity: int
+        stateAssembly: int
+        gispropnum: str
+
+    def postWorkOrders(self, workOrders: list[WorkOrder]) -> bool:
         url = self._baseURL + "Contracts/ImportWorkOrders"
         return self.__postEntities(url, workOrders)
 
