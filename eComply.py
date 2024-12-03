@@ -35,8 +35,7 @@ class eComply:
             # print(result)
             return result["token"]
         else:
-            print(response.json())
-            return ""
+            raise Exception(response.json())
 
     def __getHeaders(self) -> dict:
         token = self.__getAPIToken()
@@ -50,19 +49,18 @@ class eComply:
             result = response.json()
             return result["data"]
         else:
-            print(response.json())
-            return []
+            raise Exception(response.json())
 
     def __postEntities(self, url: str, entities: list) -> bool:
         response = requests.post(url, headers=self.__getHeaders(), json=entities)
 
         if not response.ok:
-            raise Exception(response)
+            raise Exception(response.json())
 
         response = requests.get(url, headers=self._headers)
 
         if not response.ok:
-            raise Exception(response)
+            raise Exception(response.json())
 
         result = response.json()
         if result["success"]:
