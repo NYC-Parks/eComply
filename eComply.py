@@ -24,7 +24,7 @@ class eComply:
     def __getAPIToken(self) -> str:
         url = (
             self._baseURL
-            + "Authentication/ValidateUser?"
+            + "/Authentication/ValidateUser?"
             + urllib.parse.urlencode(self._credential)
         )
 
@@ -91,26 +91,26 @@ class eComply:
     #     result = response.json()
     #     print(result)
 
-    def getContracts(self) -> list:
-        url = self._baseURL + "Contracts/ExportContracts"
+    def getContracts(self, fromDate: datetime) -> list:
+        url = f"{self._baseURL}/Contracts/ExportContracts?fromDate={fromDate}"
         return self.__getEntities(url)
 
     def postContracts(self, contracts: list) -> bool:
-        url = self._baseURL + "Contracts/ImportContracts"
+        url = f"{self._baseURL}/Contracts/ImportContracts"
         return self.__postEntities(url, contracts)
 
     def postDomainValues(self, domains: list) -> bool:
-        url = self._baseURL + "Catalog/ImportDomainNames"
+        url = f"{self._baseURL}/Catalog/ImportDomainNames"
         return self.__postEntities(url, domains)
 
-    def getWorkOrders(self) -> list:
-        url = self._baseURL + "Contracts/ExportWorkOrders"
+    def getWorkOrders(self, fromDate: datetime) -> list:
+        url = f"{self._baseURL}/Contracts/ExportWorkOrders?fromDate={fromDate}"
         return self.__getEntities(url)
 
     def postWorkOrders(self, workOrders: list) -> bool:
-        url = self._baseURL + "Contracts/ImportWorkOrders"
+        url = f"{self._baseURL}/Contracts/ImportWorkOrders"
         return self.__postEntities(url, workOrders)
 
-    def getWorkOrderLineItems(self) -> list:
-        url = self._baseURL + "Contracts/ExportWorkOrderLineItems"
+    def getWorkOrderLineItems(self, fromDate: datetime) -> list:
+        url = f"{self._baseURL}/Contracts/ExportWorkOrderLineItems?fromDate={fromDate}"
         return self.__getEntities(url)
