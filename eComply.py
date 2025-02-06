@@ -47,9 +47,12 @@ class eComply:
 
         if response.ok:
             result = response.json()
-            return result["data"]
+            if result["success"]:
+                return result["data"]
+            else:
+                raise Exception(result["message"])
         else:
-            raise Exception(response.json())
+            raise Exception(response.json()["message"])
 
     def __postEntities(self, url: str, entities: list) -> bool:
         response = requests.post(url, headers=self.__getHeaders(), json=entities)
