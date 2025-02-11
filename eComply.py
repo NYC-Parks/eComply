@@ -4,7 +4,7 @@ import urllib.parse
 
 
 class eComply:
-    _baseURL: str
+    _url: str
     _credential: dict
     _headers: dict = {
         "Authorization": "",
@@ -14,16 +14,16 @@ class eComply:
 
     def __init__(
         self,
-        baseURL: str,
+        url: str,
         username: str,
         password: str,
     ) -> None:
-        self._baseURL = baseURL
+        self._url = url
         self._credential = {"username": username, "password": password}
 
     def __getAPIToken(self) -> str:
         url = (
-            self._baseURL
+            self._url
             + "/Authentication/ValidateUser?"
             + urllib.parse.urlencode(self._credential)
         )
@@ -95,25 +95,25 @@ class eComply:
     #     print(result)
 
     def getContracts(self, fromDate: datetime) -> list:
-        url = f"{self._baseURL}/Contracts/ExportContracts?fromDate={fromDate}"
+        url = f"{self._url}/Contracts/ExportContracts?fromDate={fromDate}"
         return self.__getEntities(url)
 
     def postContracts(self, contracts: list) -> bool:
-        url = f"{self._baseURL}/Contracts/ImportContracts"
+        url = f"{self._url}/Contracts/ImportContracts"
         return self.__postEntities(url, contracts)
 
     def postDomainValues(self, domains: list) -> bool:
-        url = f"{self._baseURL}/Catalog/ImportDomainNames"
+        url = f"{self._url}/Catalog/ImportDomainNames"
         return self.__postEntities(url, domains)
 
     def getWorkOrders(self, fromDate: datetime) -> list:
-        url = f"{self._baseURL}/Contracts/ExportWorkOrders?fromDate={fromDate}"
+        url = f"{self._url}/Contracts/ExportWorkOrders?fromDate={fromDate}"
         return self.__getEntities(url)
 
     def postWorkOrders(self, workOrders: list) -> bool:
-        url = f"{self._baseURL}/Contracts/ImportWorkOrders"
+        url = f"{self._url}/Contracts/ImportWorkOrders"
         return self.__postEntities(url, workOrders)
 
     def getWorkOrderLineItems(self, fromDate: datetime) -> list:
-        url = f"{self._baseURL}/Contracts/ExportWorkOrderLineItems?fromDate={fromDate}"
+        url = f"{self._url}/Contracts/ExportWorkOrderLineItems?fromDate={fromDate}"
         return self.__getEntities(url)
