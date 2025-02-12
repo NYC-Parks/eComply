@@ -21,9 +21,9 @@ class eComply:
     ) -> None:
         self._url = url
         self._credential = {"username": username, "password": password}
-        self._token = self.__getAPIToken()
+        self._token = self.__get_api_token()
 
-    def __getAPIToken(self) -> str:
+    def __get_api_token(self) -> str:
         url = (
             self._url
             + "/Authentication/ValidateUser?"
@@ -43,7 +43,7 @@ class eComply:
         self._headers["Authorization"] = f"Bearer {self._token}"
         return self._headers
 
-    def __getEntities(self, url: str, params: dict) -> list:
+    def __get_entities(self, url: str, params: dict) -> list:
         response = requests.get(
             url=url,
             headers=self.__get_headers(),
@@ -59,7 +59,7 @@ class eComply:
         else:
             raise Exception(response.json()["message"])
 
-    def __postEntities(self, url: str, entities: list) -> bool:
+    def __post_entities(self, url: str, entities: list) -> bool:
         response = requests.post(
             url=url,
             headers=self.__get_headers(),
@@ -106,26 +106,26 @@ class eComply:
     #     result = response.json()
     #     print(result)
 
-    def getContracts(self, fromDate: datetime) -> list:
+    def get_contracts(self, fromDate: datetime) -> list:
         url = f"{self._url}/Contracts/ExportContracts"
-        return self.__getEntities(url, {fromDate: fromDate})
+        return self.__get_entities(url, {fromDate: fromDate})
 
-    def postContracts(self, contracts: list) -> bool:
+    def post_contracts(self, contracts: list) -> bool:
         url = f"{self._url}/Contracts/ImportContracts"
-        return self.__postEntities(url, contracts)
+        return self.__post_entities(url, contracts)
 
-    def postDomainValues(self, domains: list) -> bool:
+    def post_domain_values(self, domains: list) -> bool:
         url = f"{self._url}/Catalog/ImportDomainNames"
-        return self.__postEntities(url, domains)
+        return self.__post_entities(url, domains)
 
-    def getWorkOrders(self, fromDate: datetime) -> list:
+    def get_work_orders(self, fromDate: datetime) -> list:
         url = f"{self._url}/Contracts/ExportWorkOrders"
-        return self.__getEntities(url, {fromDate: fromDate})
+        return self.__get_entities(url, {fromDate: fromDate})
 
-    def postWorkOrders(self, workOrders: list) -> bool:
+    def post_work_orders(self, workOrders: list) -> bool:
         url = f"{self._url}/Contracts/ImportWorkOrders"
-        return self.__postEntities(url, workOrders)
+        return self.__post_entities(url, workOrders)
 
-    def getWorkOrderLineItems(self, fromDate: datetime) -> list:
+    def get_work_order_line_items(self, fromDate: datetime) -> list:
         url = f"{self._url}/Contracts/ExportWorkOrderLineItems"
-        return self.__getEntities(url, {fromDate: fromDate})
+        return self.__get_entities(url, {fromDate: fromDate})
