@@ -5,6 +5,7 @@ import urllib.parse
 
 class eComply:
     _url: str
+    _token: str
     _credential: dict
     _headers: dict = {
         "Authorization": "",
@@ -20,6 +21,7 @@ class eComply:
     ) -> None:
         self._url = url
         self._credential = {"username": username, "password": password}
+        self._token = self.__getAPIToken()
 
     def __getAPIToken(self) -> str:
         url = (
@@ -37,13 +39,16 @@ class eComply:
         else:
             raise Exception(response.json())
 
-    def __getHeaders(self) -> dict:
-        token = self.__getAPIToken()
-        self._headers["Authorization"] = "Bearer " + token
+    def __get_headers(self) -> dict:
+        self._headers["Authorization"] = f"Bearer {self._token}"
         return self._headers
 
-    def __getEntities(self, url: str) -> list:
-        response = requests.get(url, headers=self.__getHeaders())
+    def __getEntities(self, url: str, params: dict) -> list:
+        response = requests.get(
+            url=url,
+            headers=self.__get_headers(),
+            params=params,
+        )
 
         if response.ok:
             result = response.json()
@@ -55,12 +60,19 @@ class eComply:
             raise Exception(response.json()["message"])
 
     def __postEntities(self, url: str, entities: list) -> bool:
-        response = requests.post(url, headers=self.__getHeaders(), json=entities)
+        response = requests.post(
+            url=url,
+            headers=self.__get_headers(),
+            data=entities,
+        )
 
         if not response.ok:
             raise Exception(response.json())
 
-        response = requests.get(url, headers=self._headers)
+        response = requests.get(
+            url=url,
+            headers=self._headers,
+        )
 
         if not response.ok:
             raise Exception(response.json())
@@ -95,8 +107,8 @@ class eComply:
     #     print(result)
 
     def getContracts(self, fromDate: datetime) -> list:
-        url = f"{self._url}/Contracts/ExportContracts?fromDate={fromDate}"
-        return self.__getEntities(url)
+        url = f"{self._url}/Contracts/ExportContracts"
+        return self.__getEntities(url, {fromDate: fromDate})
 
     def postContracts(self, contracts: list) -> bool:
         url = f"{self._url}/Contracts/ImportContracts"
@@ -107,13 +119,13 @@ class eComply:
         return self.__postEntities(url, domains)
 
     def getWorkOrders(self, fromDate: datetime) -> list:
-        url = f"{self._url}/Contracts/ExportWorkOrders?fromDate={fromDate}"
-        return self.__getEntities(url)
+        url = f"{self._url}/Contracts/ExportWorkOrders"
+        return self.__getEntities(url, {fromDate: fromDate})
 
     def postWorkOrders(self, workOrders: list) -> bool:
         url = f"{self._url}/Contracts/ImportWorkOrders"
         return self.__postEntities(url, workOrders)
 
     def getWorkOrderLineItems(self, fromDate: datetime) -> list:
-        url = f"{self._url}/Contracts/ExportWorkOrderLineItems?fromDate={fromDate}"
-        return self.__getEntities(url)
+        url = f"{self._url}/Contracts/ExportWorkOrderLineItems"
+        return self.__getEntities(url, {fromDate: fromDate})
