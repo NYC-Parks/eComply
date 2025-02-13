@@ -1,5 +1,6 @@
 from datetime import datetime
-import requests
+from typing import Any
+from requests import Response, post, get
 import urllib.parse
 
 
@@ -29,75 +30,55 @@ class eComply:
             + "/Authentication/ValidateUser?"
             + urllib.parse.urlencode(self._credential)
         )
+        response: Response = post(url, headers=self._headers)
 
-        response = requests.post(url, headers=self._headers)
-
+        result: dict = response.json()
         if response.ok:
-            result = response.json()
             # print(result)
             return result["token"]
         else:
-            raise Exception(response.json())
+            raise Exception(result)
 
     def __get_headers(self) -> dict:
         self._headers["Authorization"] = f"Bearer {self._token}"
         return self._headers
 
     def __get_entities(self, url: str, params: dict) -> list:
-        response = requests.get(
+        response: Response = get(
             url=url,
             headers=self.__get_headers(),
             params=params,
         )
 
-        if response.ok:
-            result = response.json()
-            if result["success"]:
-                return result["data"]
-            else:
-                raise Exception(result["message"])
-        else:
-            raise Exception(response.json()["message"])
+        return list(self.__response_handler(response))
 
-    def __post_entities(self, url: str, entities: list) -> bool:
-        response = requests.post(
+    def __post_entities(self, url: str, entities: list) -> dict[str, Any]:
+        response: Response = post(
             url=url,
             headers=self.__get_headers(),
             data=entities,
         )
+        print(f"eComply transaction id: {self.__response_handler(response)}")
 
         if not response.ok:
             raise Exception(response.json())
 
-        response = requests.get(
+        response: Response = get(
             url=url,
             headers=self._headers,
         )
 
+        return dict(self.__response_handler(response))
+
+    def __response_handler(self, response: Response) -> dict[str, Any] | list:
+        result: dict = response.json()
         if not response.ok:
-            raise Exception(response.json())
+            raise Exception(result)
 
-        result = response.json()
         if result["success"]:
-            print(
-                {
-                    "success": result["success"],
-                    "processedResults": result["data"]["processedResults"],
-                    "totalProcessed": result["data"]["totalProcessed"],
-                    "totalWithErrors": result["data"]["totalWithErrors"],
-                    "totalUpdated": result["data"]["totalUpdated"],
-                    "totalCreated": result["data"]["totalCreated"],
-                }
-            )
+            return result["data"]
         else:
-            print(
-                {
-                    "success": result["success"],
-                    "message": result["message"],
-                }
-            )
-
-        return result["success"]
+            raise Exception(result)
 
     # def __verifyToken(self, token: str):
     #     url = self._baseURL + "Authentication/AuthenticateToken?token=" + token
@@ -110,11 +91,11 @@ class eComply:
         url = f"{self._url}/Contracts/ExportContracts"
         return self.__get_entities(url, {fromDate: fromDate})
 
-    def post_contracts(self, contracts: list) -> bool:
+    def post_contracts(self, contracts: list) -> dict:
         url = f"{self._url}/Contracts/ImportContracts"
         return self.__post_entities(url, contracts)
 
-    def post_domain_values(self, domains: list) -> bool:
+    def post_domain_values(self, domains: list) -> dict:
         url = f"{self._url}/Catalog/ImportDomainNames"
         return self.__post_entities(url, domains)
 
@@ -122,7 +103,7 @@ class eComply:
         url = f"{self._url}/Contracts/ExportWorkOrders"
         return self.__get_entities(url, {fromDate: fromDate})
 
-    def post_work_orders(self, workOrders: list) -> bool:
+    def post_work_orders(self, workOrders: list) -> dict:
         url = f"{self._url}/Contracts/ImportWorkOrders"
         return self.__post_entities(url, workOrders)
 
