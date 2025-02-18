@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 from requests import Response, post, get
-import urllib.parse
+from urllib import parse
 
 
 class eComply:
@@ -28,7 +28,7 @@ class eComply:
         url = (
             self._url
             + "/Authentication/ValidateUser?"
-            + urllib.parse.urlencode(self._credential)
+            + parse.urlencode(self._credential)
         )
         response: Response = post(url, headers=self._headers)
 
