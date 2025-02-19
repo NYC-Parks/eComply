@@ -1,13 +1,15 @@
 from datetime import datetime
+from json import dumps
 from typing import Any
+from pandas import DataFrame
 from requests import Response, post, get
 from urllib import parse
 
 
 class eComply:
     _url: str
-    _token: str
     _credential: dict
+    _token: str | None = None
     _headers: dict = {
         "Authorization": "",
         "Content-Type": "application/json",
@@ -22,7 +24,6 @@ class eComply:
     ) -> None:
         self._url = url
         self._credential = {"username": username, "password": password}
-        self._token = self.__get_api_token()
 
     def __get_api_token(self) -> str:
         url = (
@@ -40,6 +41,8 @@ class eComply:
             raise Exception(result)
 
     def __get_headers(self) -> dict:
+        if self._token is None:
+            self._token = self.__get_api_token()
         self._headers["Authorization"] = f"Bearer {self._token}"
         return self._headers
 
@@ -52,11 +55,11 @@ class eComply:
 
         return list(self.__response_handler(response))
 
-    def __post_entities(self, url: str, entities: list) -> dict[str, Any]:
+    def __post_entities(self, url: str, data: Any) -> dict[str, Any]:
         response: Response = post(
             url=url,
             headers=self.__get_headers(),
-            data=entities,
+            data=self.__to_json(data),
         )
         print(f"eComply transaction id: {self.__response_handler(response)}")
 
@@ -80,6 +83,15 @@ class eComply:
         else:
             raise Exception(result)
 
+    def __to_json(self, obj: Any) -> str:
+        if isinstance(obj, str):
+            return obj
+
+        if isinstance(obj, DataFrame):
+            return obj.to_json(orient="records", date_format="iso")
+
+        return dumps(obj)
+
     # def __verifyToken(self, token: str):
     #     url = self._baseURL + "Authentication/AuthenticateToken?token=" + token
     #     print(url)
@@ -91,11 +103,11 @@ class eComply:
         url = f"{self._url}/Contracts/ExportContracts"
         return self.__get_entities(url, {fromDate: fromDate})
 
-    def post_contracts(self, contracts: list) -> dict:
+    def post_contracts(self, contracts: Any) -> dict:
         url = f"{self._url}/Contracts/ImportContracts"
         return self.__post_entities(url, contracts)
 
-    def post_domain_values(self, domains: list) -> dict:
+    def post_domain_values(self, domains: Any) -> dict:
         url = f"{self._url}/Catalog/ImportDomainNames"
         return self.__post_entities(url, domains)
 
@@ -103,7 +115,7 @@ class eComply:
         url = f"{self._url}/Contracts/ExportWorkOrders"
         return self.__get_entities(url, {fromDate: fromDate})
 
-    def post_work_orders(self, workOrders: list) -> dict:
+    def post_work_orders(self, workOrders: Any) -> dict:
         url = f"{self._url}/Contracts/ImportWorkOrders"
         return self.__post_entities(url, workOrders)
 
