@@ -35,7 +35,6 @@ class eComply:
 
         result: dict = response.json()
         if response.ok:
-            # print(result)
             return result["token"]
         else:
             raise Exception(result)
@@ -61,7 +60,6 @@ class eComply:
             headers=self.__get_headers(),
             data=self.__to_json(data),
         )
-        print(f"eComply transaction id: {self.__response_handler(response)}")
 
         if not response.ok:
             raise Exception(response.json())
@@ -84,9 +82,6 @@ class eComply:
             raise Exception(result)
 
     def __to_json(self, obj: Any) -> str:
-        if isinstance(obj, str):
-            return obj
-
         if isinstance(obj, DataFrame):
             return obj.to_json(orient="records", date_format="iso")
 
