@@ -35,51 +35,42 @@ class API:
         return response.json()
 
     def get_contracts(self, fromDate: datetime) -> DataFrame:
-        url = f"{self._url}/Contracts/ExportContracts"
-        entities = self._get_entities(url, {fromDate: fromDate})
-
-        schema = self._get_schema_definition("ImportContractIntegrationModel")
-        self._logger.debug(f"Contract Schema Definition: {schema}")
-
-        entities = self._serialize(entities, schema)
-        self._convert_dates_to_epoch(entities)
-        return entities
+        return self._get_entities(
+            f"{self._url}/Contracts/ExportContracts",
+            {fromDate: fromDate},
+            "ImportContractIntegrationModel",
+        )
 
     def get_work_orders(self, fromDate: datetime) -> DataFrame:
-        url = f"{self._url}/Contracts/ExportWorkOrders"
-        entities = self._get_entities(url, {fromDate: fromDate})
-
-        schema = self._get_schema_definition("WorkOrderIntegrationModel")
-        self._logger.debug(f"Contract Schema Definition: {schema}")
-
-        entities = self._serialize(entities, schema)
-        self._convert_dates_to_epoch(entities)
-
-        return entities
+        return self._get_entities(
+            f"{self._url}/Contracts/ExportWorkOrders",
+            {fromDate: fromDate},
+            "WorkOrderIntegrationModel",
+        )
 
     def get_work_order_line_items(self, fromDate: datetime) -> DataFrame:
-        url = f"{self._url}/Contracts/ExportWorkOrderLineItems"
-        entities = self._get_entities(url, {fromDate: fromDate})
+        return self._get_entities(
+            f"{self._url}/Contracts/ExportWorkOrderLineItems",
+            {fromDate: fromDate},
+            "WorkOrderLineItemIntegrationModel",
+        )
 
-        return DataFrame(entities)
-
-        schema = self._get_schema_definition("WorkOrderLineItemsIntegrationModel")
-        self._logger.debug(f"Contract Schema Definition: {schema}")
-
-        entities = self._serialize(entities, schema)
-        self._convert_dates_to_epoch(entities)
-
-        return entities
-
-    def _get_entities(self, url: str, params: dict) -> list:
+    def _get_entities(self, url: str, params: dict, schema: str) -> DataFrame:
         response: Response = get(
             url=url,
             headers=self._get_headers(),
             params=params,
         )
         response.raise_for_status()
+        entities = list(self._response_handler(response))
 
-        return list(self._response_handler(response))
+        definition = self._get_schema_definition(schema)
+        self._logger.debug(f"{schema} Schema Definition: {definition}")
+
+        entities = self._serialize(entities, definition)
+        self._convert_dates_to_epoch(entities)
+
+        return entities
 
     def _get_schema_definition(
         self,
