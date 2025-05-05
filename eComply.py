@@ -7,7 +7,7 @@ from requests import Response, post, get
 from urllib import parse
 
 
-class eComply:
+class API:
     _url: str
     _credential: dict
     _openapi_spec: dict
