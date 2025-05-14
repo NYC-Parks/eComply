@@ -1,5 +1,4 @@
 from datetime import datetime
-from json import dumps
 from logging import getLogger
 from typing import Any
 from pandas import DataFrame
@@ -159,7 +158,7 @@ class API:
         response: Response = post(
             url=url,
             headers=self._get_headers(),
-            data=self._to_json(data),
+            json=data,
         )
         response.raise_for_status()
 
@@ -173,12 +172,6 @@ class API:
         response.raise_for_status()
 
         return dict(self._response_handler(response))
-
-    def _to_json(self, obj: Any) -> str:
-        if isinstance(obj, DataFrame):
-            return obj.to_json(orient="records", date_format="iso")
-
-        return dumps(obj)
 
     def _get_headers(self) -> dict:
         if self._token is None:
