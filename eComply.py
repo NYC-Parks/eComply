@@ -158,18 +158,12 @@ class API:
         response: Response = post(
             url=url,
             headers=self._get_headers(),
-            json=data,
+            data=data,
         )
         response.raise_for_status()
 
         if not response.ok:
             raise Exception(response.json())
-
-        response: Response = get(
-            url=url,
-            headers=self._headers,
-        )
-        response.raise_for_status()
 
         return dict(self._response_handler(response))
 
