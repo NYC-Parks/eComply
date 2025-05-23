@@ -158,7 +158,7 @@ class API:
         response: Response = post(
             url=url,
             headers=self._get_headers(),
-            data=data,
+            json=data,
         )
         response.raise_for_status()
 
