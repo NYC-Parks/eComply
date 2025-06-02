@@ -1,4 +1,5 @@
 from datetime import datetime
+from json import dumps
 from logging import getLogger
 from typing import Any
 from pandas import DataFrame
@@ -66,7 +67,7 @@ class API:
         definition = self._get_schema_definition(schema)
         self._logger.debug(f"{schema} Schema Definition: {definition}")
 
-        entities = self._serialize(entities, definition)
+        entities = self._deserialize(entities, definition)
         self._convert_dates_to_epoch(entities)
 
         return entities
@@ -80,7 +81,7 @@ class API:
             raise ValueError(f"Schema '{name}' not found in API specification")
         return schemas[name]
 
-    def _serialize(self, entities: list, schema_definition: dict) -> DataFrame:
+    def _deserialize(self, entities: list, schema_definition: dict) -> DataFrame:
         schema = self._create_schema(schema_definition)
         self._logger.debug(f"Schema: {schema}")
         df = self._create_dataframe(entities, schema)
@@ -154,11 +155,11 @@ class API:
         url = f"{self._url}/Contracts/ImportWorkOrders"
         return self._post_entities(url, workOrders)
 
-    def _post_entities(self, url: str, data: Any) -> dict[str, Any]:
+    def _post_entities(self, url: str, data: str) -> dict[str, Any]:
         response: Response = post(
             url=url,
             headers=self._get_headers(),
-            json=data,
+            data=self._serialize(data),
         )
         response.raise_for_status()
 
@@ -166,6 +167,14 @@ class API:
             raise Exception(response.json())
 
         return dict(self._response_handler(response))
+
+    def _serialize(self, obj: Any) -> str:
+        if isinstance(obj, DataFrame):
+            for col in obj.select_dtypes(include=["datetime"]):
+                obj[col] = obj[col].dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            return obj.to_json(orient="records")
+        else:
+            return dumps(obj)
 
     def _get_headers(self) -> dict:
         if self._token is None:
