@@ -156,8 +156,8 @@ class API:
         url = f"{self._url}/Contracts/ImportWorkOrders"
         return self._post_entities(url, workOrders)
 
-    def _post_entities(self, url: str, data: str) -> dict[str, Any]:
-        self._logger.debug(f"Posting data to {url}: {data}")
+    def _post_entities(self, url: str, data: Any) -> dict[str, Any]:
+        self._logger.debug(f"Posting data to {url}: {self._serialize(data)}")
         response: Response = post(
             url=url,
             headers=self._get_headers(),
