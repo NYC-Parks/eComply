@@ -31,8 +31,7 @@ class API:
 
     def _get_swagger_specs(self) -> dict:
         response = get(self._url + "/swagger/v1/swagger.json")
-        response.raise_for_status()
-        return response.json()
+        return self._response_handler(response)
 
     def get_contracts(self, fromDate: datetime) -> DataFrame:
         return self._get_entities(
@@ -56,14 +55,20 @@ class API:
         )
 
     def _get_entities(self, url: str, params: dict, schema: str) -> DataFrame:
-        self._logger.debug(f"Fetching entities from {url} with params: {params} and schema: {schema}")
+        self._logger.debug(
+            f"Fetching entities from {url} with params: {params} and schema: {schema}"
+        )
         response: Response = get(
             url=url,
             headers=self._get_headers(),
             params=params,
         )
-        response.raise_for_status()
-        entities = list(self._response_handler(response))
+        result = self._response_handler(response)
+
+        if result["success"]:
+            entities = list(result["data"])
+        else:
+            raise Exception(result)
 
         definition = self._get_schema_definition(schema)
         self._logger.debug(f"{schema} Schema Definition: {definition}")
@@ -86,7 +91,7 @@ class API:
         schema = self._create_schema(schema_definition)
         self._logger.debug(f"Schema: {schema}")
         df = self._create_dataframe(entities, schema)
-        self._logger.debug(f"Result: {df}")
+        self._logger.debug(f"Result: {self._serialize(df)}")
         return df
 
     def _create_schema(
@@ -110,7 +115,7 @@ class API:
     ) -> str:
         type_mapping = {
             "string": "object",
-            "integer": "int64",
+            "integer": "int32",
             "number": "float64",
             "boolean": "bool",
             "array": "object",  # Arrays will be handled as Python objects
@@ -163,12 +168,12 @@ class API:
             headers=self._get_headers(),
             data=self._serialize(data),
         )
-        response.raise_for_status()
+        result = self._response_handler(response)
 
-        if not response.ok:
-            raise Exception(response.json())
-
-        return dict(self._response_handler(response))
+        if result["success"]:
+            return dict(result["data"])
+        else:
+            raise Exception(result)
 
     def _serialize(self, obj: Any) -> str:
         if isinstance(obj, DataFrame):
@@ -186,27 +191,24 @@ class API:
 
     def _get_api_token(self) -> str:
         self._logger.debug(f"OpenAPI Specs: {self._openapi_spec}")
-        result = self._authenticate()
-        return result["token"]
 
-    def _authenticate(self):
         url = f"{self._url}/Authentication/ValidateUser?{parse.urlencode(self._credential)}"
         response: Response = post(url, headers=self._headers)
-        response.raise_for_status()
-        return response.json()
+        result = self._response_handler(response)
 
-    def _response_handler(self, response: Response) -> dict[str, Any] | list:
-        result: dict = response.json()
+        return result["token"]
+
+    def _response_handler(self, response: Response) -> dict[str, Any]:
+        response.raise_for_status()
+
+        result = response.json()
         if not response.ok:
             raise Exception(result)
 
-        if result["success"]:
-            return result["data"]
-        else:
-            raise Exception(result)
+        return result
 
-    def _verifyToken(self, token: str):
-        url = f"{self._url}Authentication/AuthenticateToken?token={self._token}"
-        response = post(url, headers=self._headers)
-        result = response.json()
-        self._logger.debug(f"Token Verification: {result}")
+    # def _verifyToken(self, token: str):
+    #     url = f"{self._url}Authentication/AuthenticateToken?token={self._token}"
+    #     response = post(url, headers=self._headers)
+    #     result = response.json()
+    #     self._logger.debug(f"Token Verification: {result}")
