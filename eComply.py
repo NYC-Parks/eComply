@@ -1,8 +1,8 @@
 from datetime import datetime
 from json import dumps
 from logging import getLogger
-from typing import Any
-from pandas import DataFrame
+from typing import Any, Final
+from pandas import DataFrame, to_datetime
 from requests import Response, post, get
 from urllib import parse
 
@@ -54,9 +54,9 @@ class API:
             "WorkOrderLineItemIntegrationModel",
         )
 
-    def _get_entities(self, url: str, params: dict, schema: str) -> DataFrame:
+    def _get_entities(self, url: str, params: dict, schema_name: str) -> DataFrame:
         self._logger.debug(
-            f"Fetching entities from {url} with params: {params} and schema: {schema}"
+            f"Fetching entities from {url} with params: {params} and schema: {schema_name}"
         )
         response: Response = get(
             url=url,
@@ -70,84 +70,39 @@ class API:
         else:
             raise Exception(result)
 
-        definition = self._get_schema_definition(schema)
-        self._logger.debug(f"{schema} Schema Definition: {definition}")
+        return self._deserialize(entities, schema_name)
 
-        entities = self._deserialize(entities, definition)
-        self._convert_dates_to_epoch(entities)
+    def _deserialize(self, entities: list[dict], schema_name: str) -> DataFrame:
+        schema = self._create_schema(schema_name)
 
-        return entities
-
-    def _get_schema_definition(
-        self,
-        name: str,
-    ) -> dict[str, Any]:
-        schemas = self._openapi_spec.get("components", {}).get("schemas", {})
-        if name not in schemas:
-            raise ValueError(f"Schema '{name}' not found in API specification")
-        return schemas[name]
-
-    def _deserialize(self, entities: list, schema_definition: dict) -> DataFrame:
-        schema = self._create_schema(schema_definition)
-        self._logger.debug(f"Schema: {schema}")
-        df = self._create_dataframe(entities, schema)
-        self._logger.debug(f"Result: {self._serialize(df)}")
-        return df
+        self._logger.debug(f"Deserializing {entities}, using schema: {schema}")
+        return DataFrame(entities).astype(schema)
 
     def _create_schema(
         self,
-        schema_definition: dict[str, Any],
+        name: str,
     ) -> dict[str, str]:
-        dtype_dict = {}
+        schemas = self._openapi_spec["components"]["schemas"]
+        if name not in schemas:
+            raise ValueError(f"Schema '{name}' not found in API specification")
 
-        for name, details in schema_definition.get("properties", {}).items():
-            dtype_dict[name] = self._type_to_dtype(
-                details.get("type"),
-                details.get("format"),
-            )
-
-        return dtype_dict
-
-    def _type_to_dtype(
-        self,
-        type: str,
-        format: str | None = None,
-    ) -> str:
-        type_mapping = {
+        schema_definition = schemas[name]
+        type_mapping: Final = {
             "string": "object",
-            "integer": "int32",
-            "number": "float64",
+            "integer": "object",  # Must be nullable and json serializable
+            "number": "object",  # Must be nullable and json serializable
             "boolean": "bool",
             "array": "object",  # Arrays will be handled as Python objects
         }
+        dtype_dict = {}
 
-        # Handle special formats
-        if type == "string" and format == "date-time":
-            return "datetime64[ns]"
+        for name, details in schema_definition["properties"].items():
+            if details["type"] == "string" and details.get("format") == "date-time":
+                dtype_dict[name] = "datetime64[ns]"
+            else:
+                dtype_dict[name] = type_mapping[details["type"]]
 
-        return type_mapping.get(type, "object")
-
-    def _create_dataframe(
-        self,
-        data: list,
-        dtype_dict: dict[str, str],
-    ) -> DataFrame:
-        df = DataFrame(data)
-
-        for col, dtype in dtype_dict.items():
-            if col in df.columns:
-                try:
-                    df[col] = df[col].astype(dtype)
-                except (ValueError, TypeError) as e:
-                    print(f"Warning: Could not convert column '{col}' to {dtype}: {e}")
-
-        return df
-
-    def _convert_dates_to_epoch(self, df: DataFrame) -> None:
-        date_columns = df.select_dtypes(include=["datetime64[ns]"]).columns
-        self._logger.debug(f"Date columns: {date_columns}")
-        for col in date_columns:
-            df[col] = df[col].astype("int64") // 10**9
+        return dtype_dict
 
     def post_contracts(self, contracts: Any) -> dict:
         url = f"{self._url}/Contracts/ImportContracts"
@@ -162,11 +117,13 @@ class API:
         return self._post_entities(url, workOrders)
 
     def _post_entities(self, url: str, data: Any) -> dict[str, Any]:
-        self._logger.debug(f"Posting data to {url}: {self._serialize(data)}")
+        data = self._serialize(data)
+        self._logger.debug(f"Posting data to {url}: {data}")
+
         response: Response = post(
             url=url,
             headers=self._get_headers(),
-            data=self._serialize(data),
+            data=data,
         )
         result = self._response_handler(response)
 
@@ -177,8 +134,8 @@ class API:
 
     def _serialize(self, obj: Any) -> str:
         if isinstance(obj, DataFrame):
-            for col in obj.select_dtypes(include=["datetime"]):
-                obj[col] = obj[col].dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            for col in obj.select_dtypes(include=["datetime64[ns]"]).columns:
+                obj[col] = obj[col].dt.strftime("%Y-%m-%dT%H:%M:%SZ")
             return obj.to_json(orient="records")
         else:
             return dumps(obj)
