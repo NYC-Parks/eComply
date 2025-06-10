@@ -2,7 +2,7 @@ from datetime import datetime
 from json import dumps
 from logging import getLogger
 from typing import Any, Final
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame
 from requests import Response, post, get
 from urllib import parse
 
@@ -74,9 +74,8 @@ class API:
 
     def _deserialize(self, entities: list[dict], schema_name: str) -> DataFrame:
         schema = self._create_schema(schema_name)
-
         self._logger.debug(f"Deserializing {entities}, using schema: {schema}")
-        return DataFrame(entities).astype(schema)
+        return self._create_dataframe(entities, schema)
 
     def _create_schema(
         self,
@@ -103,6 +102,18 @@ class API:
                 dtype_dict[name] = type_mapping[details["type"]]
 
         return dtype_dict
+
+    def _create_dataframe(
+        self,
+        entities: list[dict],
+        schema: dict[str, str],
+    ) -> DataFrame:
+        df = DataFrame(entities).astype(schema)
+        df.columns = [
+            col[0].upper() + col[1:] if col != "objectId" else col.upper()
+            for col in df.columns
+        ]
+        return df
 
     def post_contracts(self, contracts: Any) -> dict:
         url = f"{self._url}/Contracts/ImportContracts"
