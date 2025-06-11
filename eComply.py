@@ -109,10 +109,9 @@ class API:
         schema: dict[str, str],
     ) -> DataFrame:
         df = DataFrame(entities).astype(schema)
-        df.columns = [
-            col[0].upper() + col[1:] if col != "objectId" else col.upper()
-            for col in df.columns
-        ]
+        df.columns = [col[0].upper() + col[1:] for col in df.columns]
+        df.columns = [col[:-2] + "ID" if col.endswith("Id") else col for col in df.columns]
+        df.columns = [col.upper() if col == "ObjectID" else col for col in df.columns]
         return df
 
     def post_contracts(self, contracts: Any) -> dict:
